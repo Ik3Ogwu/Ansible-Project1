@@ -41,7 +41,6 @@ pipeline {
                 }
                 sh 'echo ${DB_HOST}'
                 sh 'echo ${NODE_IP}'
-<<<<<<< HEAD:jenkinsfile
                 sh 'envsubst < node-env-template > ./nodejs/server/.env'
                 sh 'cat ./nodejs/server/.env'
                 sh 'envsubst < react-env-template > ./react/client/.env'
@@ -49,15 +48,6 @@ pipeline {
                 sh 'docker build --force-rm -t "$ECR_REGISTRY/$APP_REPO_NAME:postgre" -f ./postgresql/dockerfile-postgresql .'
                 sh 'docker build --force-rm -t "$ECR_REGISTRY/$APP_REPO_NAME:nodejs" -f ./nodejs/dockerfile-nodejs .'
                 sh 'docker build --force-rm -t "$ECR_REGISTRY/$APP_REPO_NAME:react" -f ./react/dockerfile-react .'
-=======
-                sh 'envsubst < node-env-template > ./required-files/nodejs/server/.env'
-                sh 'cat ./.env'
-                sh 'envsubst < react-env-template > .env'
-                sh 'cat ./.env'
-                sh 'docker build --force-rm -t "$ECR_REGISTRY/$APP_REPO_NAME:postgre" -f ./required-files/postgresql/dockerfile-postgresql .'
-                sh 'docker build --force-rm -t "$ECR_REGISTRY/$APP_REPO_NAME:nodejs" -f ./required-files/nodejs/dockerfile-nodejs .'
-                sh 'docker build --force-rm -t "$ECR_REGISTRY/$APP_REPO_NAME:react" -f ./required-files/react/dockerfile-react .'
->>>>>>> ac7a50488a02efd97a66029d1e434daf9e99557c:Jenkinsfile
                 sh 'docker image ls'
             }
         }
@@ -85,15 +75,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 // Use Ansible playbook to deploy the application
-<<<<<<< HEAD:jenkinsfile
                 ansiblePlaybook credentialsId: 'son', disableHostKeyChecking: true, installation: 'ansible', inventory: 'inventory_aws_ec2.yml', playbook: 'docker-project.yml', vaultTmpPath: ''
-=======
-                ansiblePlaybook credentialsId: 'son', 
-                installation: 'ansible', 
-                inventory: './required-files/inventory_aws_ec2.yml', 
-                playbook: './required-files/docker-project.yml', 
-                vaultTmpPath: ''
->>>>>>> ac7a50488a02efd97a66029d1e434daf9e99557c:Jenkinsfile
             }
         }
     }
