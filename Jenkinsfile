@@ -1,5 +1,8 @@
 pipeline {
     agent any
+    tools {
+        terraform 'terraform'
+}
     environment {
         PATH=sh(script:"echo $PATH:/usr/local/bin", returnStdout:true).trim()
         AWS_REGION = "us-east-1"
@@ -8,30 +11,32 @@ pipeline {
         APP_REPO_NAME = "ecr-repo/todo-app"
         APP_NAME = "todo"
         HOME_FOLDER = "/home/ec2-user"
-        GIT_FOLDER = sh(script:'echo ${https://github.com/nicholasdesousa3/AnsibleProject} | sed "s/.*\\///;s/.git$//"', returnStdout:true).trim()
+        GIT_FOLDER = sh(script:'echo ${GIT_URL} | sed "s/.*\\///;s/.git$//"', returnStdout:true).trim()
     }
+
     stages {
-        stage('Create Infrastructure') {
+
+        stage('Create Infrastructure for the App') {
             steps {
-                script{
-                    sh 'echo "Initilializing terraform files and instances"'
-                    sh 'terraform init'
-                    sh 'terraform apply --auto-approve'
-                }
-                
+                echo 'Creating Infrastructure for the App on AWS Cloud'
+                sh 'terraform init'
+                sh 'terraform apply --auto-approve'
             }
         }
-        stage('Create ECR') {
+
+        stage('Create ECR Repo') {
             steps {
-                script {
-                    sh '''
-                        echo "Creating ECR repository"
-                        aws ecr describe-repositories --region ${AWS_REGION} | grep ${APP_REPO_NAME} || \
-                        aws ecr create-repository --region ${AWS_REGION} --repository-name ${APP_REPO_NAME}
-                    '''
-                }     
+                echo 'Creating ECR Repo for App'
+                sh """
+                aws ecr create-repository \
+                  --repository-name ${APP_REPO_NAME} \
+                  --image-scanning-configuration scanOnPush=false \
+                  --image-tag-mutability MUTABLE \
+                  --region ${AWS_REGION}
+                """
             }
         }
+
         stage('Build App Docker Image') {
             steps {
                 echo 'Building App Image'
@@ -51,32 +56,57 @@ pipeline {
                 sh 'docker image ls'
             }
         }
-        stage('Push images to ECR') {
+
+        stage('Push Image to ECR Repo') {
             steps {
-                script{
-                    sh'echo "Pushing images to ECR"'
-                    //sh 'aws sso login --profile jenkins-project-profile'
-                    sh 'aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin "$ECR_REGISTRY"'
-                    sh 'docker push "$ECR_REGISTRY/$APP_REPO_NAME:react"'
-                    sh 'docker push "$ECR_REGISTRY/$APP_REPO_NAME:nodejs"'
-                    sh 'docker push "$ECR_REGISTRY/$APP_REPO_NAME:postgre"'
-                    }
-                }
+                echo 'Pushing App Image to ECR Repo'
+                sh 'aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin "$ECR_REGISTRY"'
+                sh 'docker push "$ECR_REGISTRY/$APP_REPO_NAME:postgre"'
+                sh 'docker push "$ECR_REGISTRY/$APP_REPO_NAME:nodejs"'
+                sh 'docker push "$ECR_REGISTRY/$APP_REPO_NAME:react"'
             }
-        stage('Wait') {
+        }
+
+        stage('wait the instance') {
             steps {
-                script{
-                    // Use AWS CLI to describe instance status and wait until it's running
-                    id = sh(script: 'aws ec2 describe-instances --filters Name=tag-value,Values=ansible_nodejs Name=instance-state-name,Values=running --query Reservations[*].Instances[*].[InstanceId] --output text',  returnStdout:true).trim()
-                    sh "aws ec2 wait instance-status-ok --instance-ids $id"
+                script {
+                    echo 'Waiting for the instance'
+                    id = sh(script: 'aws ec2 describe-instances --filters Name=tag-value,Values=ansible_postgresql Name=instance-state-name,Values=running --query Reservations[*].Instances[*].[InstanceId] --output text',  returnStdout:true).trim()
+                    sh 'aws ec2 wait instance-status-ok --instance-ids $id'
                 }
             }
         }
-        stage('Deploy') {
+
+        stage('Deploy the App') {
             steps {
-                // Use Ansible playbook to deploy the application
-                ansiblePlaybook credentialsId: 'son', disableHostKeyChecking: true, installation: 'ansible', inventory: 'inventory_aws_ec2.yml', playbook: 'docker-project.yml', vaultTmpPath: ''
+                echo 'Deploy the App'
+                sh 'ls -l'
+                sh 'ansible --version'
+                sh 'ansible-inventory --graph'
+               // ansiblePlaybook credentialsId: 'ansible', disableHostKeyChecking: true, installation: 'ansible', inventory: 'inventory_aws_ec2.yml', playbook: 'docker_project.yml'
+                ansiblePlaybook credentialsId: 'son', disableHostKeyChecking: true, installation: 'ansible', inventory: 'inventory_aws_ec2.yml', playbook: 'docker_project.yml', vaultTmpPath: ''
+             }
+        }
+
+ 
+
+        stage('Destroy the infrastructure'){
+            steps{
+                timeout(time:5, unit:'DAYS'){
+                    input message:'Approve terminate'
+                }
+                sh """
+                docker image prune -af
+                terraform destroy --auto-approve
+                aws ecr delete-repository \
+                  --repository-name ${APP_REPO_NAME} \
+                  --region ${AWS_REGION} \
+                  --force
+                """
             }
         }
+
     }
+
+
 }
