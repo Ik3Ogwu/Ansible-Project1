@@ -1,0 +1,5 @@
+<<<<<<< HEAD
+REACT_APP_BASE_URL=http://${NODE_IP}:5000/
+=======
+REACT_APP_BASE_URL=http://${NODE_IP}:5000/
+>>>>>>> ac7a50488a02efd97a66029d1e434daf9e99557c

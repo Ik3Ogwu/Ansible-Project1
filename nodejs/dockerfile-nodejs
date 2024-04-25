@@ -1,0 +1,21 @@
+# Use node:14 as a base image
+FROM node:14
+
+# Create app directory (path should be /usr/src/app)
+WORKDIR /usr/src/app
+
+# Copy all package json files
+COPY ./required-files/nodejs/server/package*.json ./
+
+# do npm install
+RUN npm install
+
+
+# now, copy all files into the image
+COPY ./required-files/nodejs/server/ .
+
+# open required port number
+EXPOSE 5000
+
+# run the application
+CMD ["node", "app.js"]

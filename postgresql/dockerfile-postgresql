@@ -1,0 +1,8 @@
+# use postgres base image
+FROM postgres
+
+# copy init.sql under correct path (check postgres image details for more info)
+COPY ./required-files/postgresql/init.sql ./docker-entrypoint-initdb.d
+
+# open required port number
+EXPOSE 5432
