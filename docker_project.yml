@@ -28,7 +28,7 @@
       with_items:
         - yum-utils # install yum utils
         - device-mapper-persistent-data
-        - lmv2
+        - lvm2
         - unzip
  
     - name: Add Docker repo
