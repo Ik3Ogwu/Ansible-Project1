@@ -82,7 +82,7 @@
  
     - name: log in to AWS ec2-user
       shell: |
-        export PATH = /usr/local/bin:$PATH
+        export PATH=/usr/local/bin:$PATH
         source ~/.bash_profile
         aws ecr get-login-password --region {{ aws_region }} | docker login --username AWS --password-stdin {{ ecr_registry }}
 
