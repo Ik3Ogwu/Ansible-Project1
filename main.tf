@@ -22,7 +22,7 @@ variable "names" {
 resource "aws_instance" "worker_nodes" {
   ami                  = "ami-0f095f89ae15be883"
   instance_type        = "t2.micro"
-  iam_instance_profile = aws_iam_instance_profile.ec2-profile.name
+  iam_instance_profile = aws_iam_instance_profile.jenkins-project-profile.name
   vpc_security_group_ids = [aws_security_group.instances_sg.id]
   count                = 3
 
