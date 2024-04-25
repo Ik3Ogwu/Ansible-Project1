@@ -1,20 +1,16 @@
-# Use node:14 as a base image
 FROM node:14
 
-# Create app directory (use /app path)
+# Create app directory
 WORKDIR /app
 
-# Copy all package json files under /app
-COPY ./required-files/react/client/package*.json ./
 
-# Run yarn install
+COPY ./react/client/package*.json ./
+
 RUN yarn install
 
 # copy all files into the image
-COPY ./required-files/react/client .
+COPY ./react/client/ .
 
-# open required port number
 EXPOSE 3000
 
-# run application
 CMD ["yarn", "run", "start"]
