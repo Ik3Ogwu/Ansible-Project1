@@ -3,7 +3,7 @@
   become: true
   vars:
     aws_region: us-east-1                                                       #AWS region
-    ecr_registry: 975050340837.dkr.ecr.us-east-1.amazonaws.com          #ECR ID
+    ecr_registry: 105272352775.dkr.ecr.us-east-1.amazonaws.com          #ECR ID 975050340837
   tasks:
  
     # we need to uninstall any existing docker files from the centos repo first.
